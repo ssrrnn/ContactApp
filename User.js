@@ -1,6 +1,6 @@
 const Contact = require('./Contact.js')
 const ContactInfo = require('./ContactInfo.js')
-const BaseError = require('./BaseError.js')
+const Invalid = require('./Invalid.js')
 const Unauthorized = require('./Unauthorized.js')
 class User{
     static ID = 0
@@ -25,16 +25,21 @@ class User{
         return userObj
         //return new User(fullName, false, gender, country)
     }
-    catch(e){
-       console.log (e)
-       return e
+    catch(error){
+       //console.log (error)
+       return error
     }
 }
     getAllUsers(){
+       try{
         if(!this.isAdmin){
-            return "Unauthorised User."
+            throw new Unauthorized( "Unauthorised User !")
         }
         return User.allUser
+       }
+       catch(error){
+        return error
+     }
     }
     getUserByID(userID){
         if(!this.isAdmin){
@@ -154,21 +159,10 @@ class User{
         if (!isContactExist) {
             return "contact does not exist"
         }
-        // let contactInfoObj = new ContactInfo(typeOfContact, valueOfContact)
-        // this.contactInfo.push(contactInfoObj)
-        // return contactInfoObj
         this.contacts[indexOfContact].newContactInfo(typeOfContact, valueOfContact)
         return this.contacts[indexOfContact]
     }
 
-    // findContactInfo(contactInfoID) {
-    //     for (let index = 0; index < this.contactInfo.length; index++) {
-    //         if (contactInfoID == this.contactInfo[index].ID) {
-    //             return [index, true]
-    //         } return [-1, false]
-
-    //     }
-    // }
     getAllContactInfo(contactId) {
         if (typeof contactId != "number") {
             return "Invalid user ID"
@@ -205,6 +199,9 @@ class User{
     deleteContactInfo(contactID, contactInfoID){
         if (typeof contactInfoID != "number") {return "Invalid contactInfoID input"}
         let [indexOfContact, isContactExist] = this.findContact(contactID)
+    
+        this.contacts[indexOfContact].deleteContactInfo(contactInfoID)
+    
         if (!isContactExist) {return "Contact not found"}
         return this.contacts[indexOfContact]
     }
@@ -214,9 +211,10 @@ let a = User.newAdmin("Admin", "M", "IN")
 let user1 = a.newUser("Yoozer","M","IN")
 
 //let user2 = user1.newUser("Yoozer2","F","UK")
+//console.log(user2)
 let user3 = a.newUser("Yoozer3","T","USA")
 //console.log(user1)
-// console.log(a.getAllUsers())
+ console.log(user1.getAllUsers())
 // console.log(a.getUserByID(2))
 user1.createContact('Amar')
 user1.createContact('Akbar')
@@ -230,7 +228,13 @@ user1.createContact('Anthony')
 // console.log(user1.deleteContact(1))
 // console.log(user1.getContact())
 user1.newContactInfo(0,'Mail', 'abc@gmail.com')
+user1.newContactInfo(0,'Mob', '988675674')
 console.log(user1.getAllContactInfo(0))
-user1.updateContactInfo(0,'Mail','aaaaaaa')
+//console.log(user1.getAllContactInfo(1))
+user1.updateContactInfo(0, 0, 'xyz@mail')
 //console.log(user1)
 console.log(user1.getAllContactInfo(0))
+
+//console.log(user1.deleteContactInfo(0,1))
+console.log("-----------------")
+console.log(user1.getContactInfoById(0,1))
