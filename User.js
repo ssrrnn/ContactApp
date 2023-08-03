@@ -2,6 +2,8 @@ const Contact = require('./Contact.js')
 const ContactInfo = require('./ContactInfo.js')
 const Invalid = require('./Invalid.js')
 const Unauthorized = require('./Unauthorized.js')
+const NotFound = require('./NotFound.js')
+
 class User{
     static ID = 0
     static allUser =[]
@@ -33,7 +35,7 @@ class User{
     getAllUsers(){
        try{
         if(!this.isAdmin){
-            throw new Unauthorized( "Unauthorised User !")
+            throw new Unauthorized( "User must be Admin!")
         }
         return User.allUser
        }
@@ -42,8 +44,9 @@ class User{
      }
     }
     getUserByID(userID){
+       try{
         if(!this.isAdmin){
-            return "Unauthorised User."
+            throw new Unauthorized("User is not an Admin.")
         }
         for (let index = 0; index < User.allUser.length; index++) {
             if(userID == User.allUser[index].ID){
@@ -51,7 +54,10 @@ class User{
             }
         }
         return "User doesnt exist!"
-        
+       }
+        catch(error){
+            return error
+        }
     }
     static findUser(userID){
         for (let index = 0; index < User.allUser.length; index++) {
@@ -62,11 +68,12 @@ class User{
             return [-1, false]
     }
     updateUser(userID, parameter, newValue){
+       try{
         if(!this.isAdmin){
-            return "Unauthorised User."
+            throw new Unauthorized("User must be Admin!")
         }
         if(typeof parameter != 'string' ){
-            return "Invalid Parameter type"
+            throw new Invalid("Invalid parameter, enter a string.")
         }
         let [indexOfUser, userExists] = User.findUser(userID)
         if(!userExists){
@@ -75,134 +82,216 @@ class User{
         switch (parameter) {
             case 'fullName':
                 if(typeof newValue != 'string' ){
-                    return "Invalid Name Input"
+                    throw new Invalid("Invalid name, enter a string.")
                 }
                 User.allUser[indexOfUser].fullName = newValue
                 return User.allUser[indexOfUser]
             case 'gender':
                 if(typeof newValue != 'string' ){
-                    return "Invalid Gender Input"
+                    throw new Invalid("Invalid gender type, enter string.")
                 }
                 User.allUser[indexOfUser].gender = newValue
                 return User.allUser[indexOfUser]    
             case 'country':
                 if(typeof newValue != 'string' ){
-                    return "Invalid Country Input"
+                    throw new Invalid("Invalid country type, enter string.")
                 }
                 User.allUser[indexOfUser].country = newValue
                 return User.allUser[indexOfUser]
             default:
-                return "Invalid Parameter!"
+                throw new NotFound("Parametr not found!")
         }
+       }
+       catch (error){
+        return error
+       }
     }
     deleteUser(userID){
+       try{
         if(!this.isAdmin){
-            return "Unauthorised User."
+            throw new Unauthorized("User must be Admin!")
         }
         let [indexOfUser, userExists] = User.findUser(userID)
         if(!userExists){
-            return "User not found."
+            throw new NotFound("User not found! ")
         }
         User.allUser.splice(indexOfUser, 1)
-
+       }
+       catch(error){
+        return error
+       }
     }
     static newAdmin(fullName, gender, country){
         return new User(fullName, gender, country, true)
     }
     createContact(contactFullName){
+       try{
+        if(this.isAdmin){
+            throw new Unauthorized("User must not be admin!")
+        }
+        if(typeof contactFullName != 'string'){
+            throw new Invalid("Invalid type, must be a string")
+        }
         let contact = new Contact(contactFullName)
         this.contacts.push(contact)
         return contact
+       }
+       catch(error){
+        return error
+       }
     }
     getContact(){
-        return this.contacts
+        try {
+            if(this.isAdmin){
+                throw new Unauthorized("User must not be admin!")
+            }
+            return this.contacts
+        } catch (error) {
+            return error
+        }
     }
     getContactById(contactId){
+       try {
+        if(this.isAdmin){
+            throw new Unauthorized("User must not be admin!")
+        }
         if(typeof contactId != "number"){
-            return "Invalid number"
+           throw new Invalid("Invalid ID, must be number.")
         }
-        let [indexOfContact, isContactExist] = this.findContact(contactId)
-        if(!isContactExist){
-            return "User does not exist"
-        }
+        let indexOfContact = this.findContact(contactId)
+       
         return this.contacts[indexOfContact]
+       } catch (error) {
+            return error
+       }
     }
     findContact(contactID){
-        for (let index = 0; index < this.contacts.length; index++) {
-            if(contactID == this.contacts[index].ID){
-                return [index, true]
+        try {
+            for (let index = 0; index < this.contacts.length; index++) {
+                if(contactID == this.contacts[index].ID){
+                    return index
+                }
             }
+            throw new NotFound("Contact not found.")
+        } catch (error) {
+            throw error
         }
-        return [-1, false]
     }
     updateContact(contactID, updatedName){
-        let[indexOfContact, contactExists] = this.findContact(contactID)
-        if(!contactExists){
-            return "Contact doesnt exist!"
+        try {
+            if(this.isAdmin){
+                throw new Unauthorized("User must not be admin!")
+            }
+            if(typeof contactID != "number"){
+                throw new Invalid("Invalid ID, must be number.")
+            }
+             if(typeof updatedName != "string"){
+                throw new Invalid("Invalid name, must be string.")
+            }
+            let indexOfContact = this.findContact(contactID)
+            this.contacts[indexOfContact].contactFullName = updatedName
+            return this.contacts[indexOfContact]
+        } 
+        catch (error) {
+         return error
         }
-        this.contacts[indexOfContact].contactFullName = updatedName
-        return this.contacts[indexOfContact]
     }
     deleteContact(contactID){
-        let [indexOfContact, userExists] = this.findContact(contactID)
-        if(!userExists){
-            return "Contact not found."
+       try {
+        if(this.isAdmin){
+            throw new Unauthorized("User must not be admin!")
         }
+        if(typeof contactID != "number"){
+            throw new Invalid("Invalid ID, must be number.")
+        }
+        let indexOfContact = this.findContact(contactID)
         this.contacts.splice(indexOfContact, 1)
+       } 
+       catch (error) {
+        return error
+       }
 
     }
     newContactInfo(contactId, typeOfContact, valueOfContact) {
-        if (typeof contactId != "number") {
-            return "Invalid user ID"
+        try{
+            if(this.isAdmin){
+                throw new Unauthorized("User must not be admin!")
+            }
+            if (typeof contactId != "number") {
+                throw new Invalid("Invalid ID type must be a number.")
+            }
+            let indexOfContact = this.findContact(contactId)
+            this.contacts[indexOfContact].newContactInfo(typeOfContact, valueOfContact)
+            return this.contacts[indexOfContact]
         }
-        let [indexOfContact, isContactExist] = this.findContact(contactId)
-        if (!isContactExist) {
-            return "contact does not exist"
+        catch(error){
+            return error
         }
-        this.contacts[indexOfContact].newContactInfo(typeOfContact, valueOfContact)
-        return this.contacts[indexOfContact]
     }
 
     getAllContactInfo(contactId) {
+       try {
+        if(this.isAdmin){
+            throw new Unauthorized("User must not be admin!")
+        }
         if (typeof contactId != "number") {
-            return "Invalid user ID"
+            throw new Invalid("Invalid ID type must be a number.")
         }
-        let [indexOfContact, isContactExist] = this.findContact(contactId)
-        if (!isContactExist) {
-            return "contact does not exist"
-        }
+        let indexOfContact = this.findContact(contactId)
         this.contacts[indexOfContact].getAllContactInfo()
         return this.contacts[indexOfContact]
+       } 
+       catch (error) {
+        return error
+       }
     }
     getContactInfoById(contactId, contactInfoId){
-        if(typeof contactId != "number"){
-            return "Invalid number"
+        try {
+            if(this.isAdmin){
+                throw new Unauthorized("User must not be admin!")
+            }
+            if (typeof contactId != "number") {
+                throw new Invalid("Invalid ID type must be a number.")
+            }
+            let indexOfContact = this.findContact(contactId)
+           
+            return this.contacts[indexOfContact].getContactInfoById(contactInfoId)
+        } 
+        catch (error) {
+            return error
         }
-        let [indexOfContact, isContactExist] = this.findContact(contactId)
-        if(!isContactExist){
-            return "User does not exist"
-        }
-        return this.contacts[indexOfContact].getContactInfoById(contactInfoId)
     }
     updateContactInfo(contactId, contactInfoId, newValue) {
-        if (typeof contactId != "number") {
-            return "invalid user Id"
+        try {
+            if(this.isAdmin){
+                throw new Unauthorized("User must not be admin!")
+            }
+            if (typeof contactId != "number") {
+                throw new Invalid("Invalid ID type must be a number.")
+            }
+            let indexOfContact = this.findContact(contactId)
+            
+            this.contacts[indexOfContact].updateContactInfo(contactInfoId, newValue)
+            return this.contacts[indexOfContact]
+        } catch (error) {
+            return error
         }
-        let [indexOfContact, isContactExist] = this.findContact(contactId)
-        if (!isContactExist) {
-            return "contact does not exist"
-        }
-        this.contacts[indexOfContact].updateContactInfo(contactInfoId, newValue)
-        return this.contacts[indexOfContact]
     }
 
     deleteContactInfo(contactID, contactInfoID){
-        if (typeof contactInfoID != "number") {return "Invalid contactInfoID input"}
-        let [indexOfContact, isContactExist] = this.findContact(contactID)
+        if(this.isAdmin){
+            throw new Unauthorized("User must not be admin!")
+        }
+        if (typeof contactID != "number") {
+            throw new Invalid("Invalid ID type, must be a number.")
+        }
+        if (typeof contactInfoID != "number") {
+            throw new Invalid("Invalid ID type, must be a number.")
+        }
+        let indexOfContact = this.findContact(contactID)
     
         this.contacts[indexOfContact].deleteContactInfo(contactInfoID)
-    
-        if (!isContactExist) {return "Contact not found"}
+
         return this.contacts[indexOfContact]
     }
 }
@@ -214,14 +303,14 @@ let user1 = a.newUser("Yoozer","M","IN")
 //console.log(user2)
 let user3 = a.newUser("Yoozer3","T","USA")
 //console.log(user1)
- console.log(user1.getAllUsers())
+//console.log(user1.getAllUsers())
 // console.log(a.getUserByID(2))
 user1.createContact('Amar')
 user1.createContact('Akbar')
 user1.createContact('Anthony')
 // console.log(user1.getContact())
 // console.log(user1.updateContact(1, 'Bruhh'))
-// console.log(a.updateUser(3,'country','Ghana'))
+// console.log(a.updateUser(2,'country','Ghana'))
 // console.log(a.deleteUser(2))
 // console.log(a.getAllUsers())
 // console.log(user1.getContact())
